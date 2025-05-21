@@ -1,13 +1,9 @@
 pipeline {
     agent any
 
-    environment {
-        MAVEN_HOME = '/usr/share/maven' // hoặc đường dẫn maven trong container
-    }
-
     tools {
-        maven 'Maven 3' // tên cấu hình Maven đã add trong Jenkins (Manage Jenkins > Global Tool Configuration)
-        jdk 'JDK 17'    // tương tự với JDK
+        maven 'Maven 3'   // Tên cấu hình Maven trong Jenkins
+        jdk 'JDK 17'      // Tên cấu hình JDK trong Jenkins
     }
 
     stages {
@@ -20,13 +16,29 @@ pipeline {
 
         stage('Build') {
             steps {
-                sh 'mvn clean package -DskipTests'
+                script {
+                    def mvnHome = tool 'Maven 3'
+                    def javaHome = tool 'JDK 17'
+                    sh """
+                        export JAVA_HOME=${javaHome}
+                        export PATH=${mvnHome}/bin:${javaHome}/bin:\$PATH
+                        mvn clean package -DskipTests
+                    """
+                }
             }
         }
 
         stage('Test') {
             steps {
-                sh 'mvn test'
+                script {
+                    def mvnHome = tool 'Maven 3'
+                    def javaHome = tool 'JDK 17'
+                    sh """
+                        export JAVA_HOME=${javaHome}
+                        export PATH=${mvnHome}/bin:${javaHome}/bin:\$PATH
+                        mvn test
+                    """
+                }
             }
         }
 
