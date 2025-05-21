@@ -2,8 +2,8 @@ pipeline {
     agent any
 
     tools {
-        jdk 'JDK 17'       // Tên phải trùng với cấu hình ở Global Tool Configuration
-        maven 'Maven 3'    // Tên Maven cũng trùng với cấu hình trong Jenkins
+        jdk 'JDK 17'       // Tên cấu hình JDK trong Global Tool Configuration
+        maven 'Maven 3'    // Tên cấu hình Maven trong Global Tool Configuration
     }
 
     stages {
@@ -16,13 +16,33 @@ pipeline {
 
         stage('Build') {
             steps {
-                sh 'mvn clean package -DskipTests'
+                script {
+                    def javaHome = tool 'JDK 17'
+                    def mavenHome = tool 'Maven 3'
+                    withEnv([
+                        "JAVA_HOME=${javaHome}",
+                        "PATH+JAVA=${javaHome}/bin",
+                        "PATH+MAVEN=${mavenHome}/bin"
+                    ]) {
+                        sh 'mvn clean package -DskipTests'
+                    }
+                }
             }
         }
 
         stage('Test') {
             steps {
-                sh 'mvn test'
+                script {
+                    def javaHome = tool 'JDK 17'
+                    def mavenHome = tool 'Maven 3'
+                    withEnv([
+                        "JAVA_HOME=${javaHome}",
+                        "PATH+JAVA=${javaHome}/bin",
+                        "PATH+MAVEN=${mavenHome}/bin"
+                    ]) {
+                        sh 'mvn test'
+                    }
+                }
             }
         }
 
@@ -38,7 +58,7 @@ pipeline {
             }
             steps {
                 echo "Deploying to production server..."
-                // Ví dụ deploy
+                // Thêm các bước deploy nếu có
             }
         }
     }
