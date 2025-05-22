@@ -10,12 +10,11 @@ pipeline {
         JAVA_HOME = "${tool 'jdk17'}"
         PATH = "${JAVA_HOME}/bin:${env.PATH}"
 
-        // Biến kết nối DB
-        DB_HOST = '0.0.0.0'         // ví dụ: localhost, 127.0.0.1, mysql-server
+        DB_HOST = 'localhost'     // Hoặc IP MySQL trong Docker network
         DB_PORT = '3306'
         DB_NAME = 'studentdb'
-        DB_USER = 'root'
-        DB_PASSWORD = '123456' // lưu trong Jenkins Credentials
+        DB_CREDENTIALS = credentials('mysql-root')
+        DOCKER_IMAGE = "your-repo/your-app:latest"  // tùy chỉnh nếu cần
     }
 
     stages {
@@ -26,7 +25,7 @@ pipeline {
             }
         }
 
-        stage('Build') {
+        stage('Build Java') {
             steps {
                 sh 'mvn clean package -DskipTests'
             }
@@ -38,39 +37,54 @@ pipeline {
             }
         }
 
-        stage('Database Connection Test') {
+        stage('DB Connection Test') {
             steps {
-                script {
-                    sh '''
-                        echo "Checking MySQL connection..."
-                        mysql -h $DB_HOST -P $DB_PORT -u $DB_USER -p$DB_PASSWORD -e "SHOW DATABASES;"
-                    '''
-                }
+                sh '''
+                    echo "Testing connection to MySQL..."
+                    mysql -h $DB_HOST -P $DB_PORT -u $DB_CREDENTIALS_USR -p$DB_CREDENTIALS_PSW -e "SHOW DATABASES;"
+                '''
             }
         }
 
-        stage('Package & Archive') {
+        stage('Build Docker Image') {
+            steps {
+                sh "docker build -t ${DOCKER_IMAGE} ."
+            }
+        }
+
+        stage('Push Docker Image') {
+            when {
+                expression { return env.DOCKER_IMAGE.contains("your-repo") }
+            }
+            steps {
+                // Chỉ push nếu bạn có login docker registry ở trước đó
+                // sh 'docker login -u $DOCKER_USER -p $DOCKER_PASSWORD registry-url'
+                sh "docker push ${DOCKER_IMAGE}"
+            }
+        }
+
+        stage('Archive JAR') {
             steps {
                 archiveArtifacts artifacts: 'target/*.jar', fingerprint: true
             }
         }
 
-        stage('Deploy (optional)') {
+        stage('Deploy') {
             when {
                 branch 'main'
             }
             steps {
-                echo "Deploying to production server..."
+                echo "🚀 Deploying to production server..."
             }
         }
     }
 
     post {
         success {
-            echo '🎉 Build, DB check và test thành công!'
+            echo '🎉 Build + Test + DB check + Docker image OK!'
         }
         failure {
-            echo '❌ Build hoặc DB check thất bại. Kiểm tra log.'
+            echo '❌ Something went wrong, check logs.'
         }
     }
 }
