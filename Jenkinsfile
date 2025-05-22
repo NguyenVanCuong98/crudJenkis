@@ -14,7 +14,7 @@ pipeline {
         DB_PORT = '3306'
         DB_NAME = 'studentdb'
         DB_CREDENTIALS = credentials('mysql-root')
-        DOCKER_IMAGE = "your-repo/your-app:latest"  // tùy chỉnh nếu cần
+        DOCKER_IMAGE = "mysql-student"  // tùy chỉnh nếu cần
     }
 
     stages {
