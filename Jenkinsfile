@@ -1,54 +1,36 @@
 pipeline {
     agent any
 
-    tools {
-        jdk 'jdk17'                // tên bạn đặt ở bước 2
-        maven 'maven-3.8.6'        // tên bạn đặt ở bước 3
-    }
-
     environment {
-        JAVA_HOME = "${tool 'jdk17'}"
-        PATH = "${JAVA_HOME}/bin:${env.PATH}"
+        // Đặt biến môi trường nếu cần
+        DOCKER_COMPOSE_FILE = 'docker-compose.yml'
     }
 
     stages {
         stage('Checkout') {
             steps {
-                git branch: 'main',
-                    url: 'https://github.com/NguyenVanCuong98/crudJenkis'
+                // Lấy code từ nhánh main
+                git branch: 'main', url: 'https://github.com/your/repo.git'
             }
         }
-        stage('Build') {
+
+        stage('Build & Deploy') {
             steps {
-                sh 'mvn clean package -DskipTests'
-            }
-        }
-        stage('Test') {
-            steps {
-                sh 'mvn test'
-            }
-        }
-        stage('Package & Archive') {
-            steps {
-                archiveArtifacts artifacts: 'target/*.jar', fingerprint: true
-            }
-        }
-        stage('Deploy (optional)') {
-            when {
-                branch 'main'
-            }
-            steps {
-                echo "Deploying to production server..."
+                // Dừng các container đang chạy nếu có
+                sh 'docker-compose -f $DOCKER_COMPOSE_FILE down'
+
+                // Build và chạy container mới
+                sh 'docker-compose -f $DOCKER_COMPOSE_FILE up -d --build'
             }
         }
     }
 
     post {
         success {
-            echo '🎉 Build and tests successful!'
+            echo 'Build và deploy thành công!'
         }
         failure {
-            echo '❌ Build failed. Check logs.'
+            echo 'Build hoặc deploy thất bại!'
         }
     }
 }
