@@ -1,36 +1,21 @@
 pipeline {
-    agent any
-
-    environment {
-        // Đặt biến môi trường nếu cần
-        DOCKER_COMPOSE_FILE = 'docker-compose.yml'
+    agent {
+        docker {
+            image 'docker/compose:1.29.2'  // image có sẵn docker + docker-compose
+            args '-v /var/run/docker.sock:/var/run/docker.sock'  // gắn docker socket
+        }
     }
-
     stages {
         stage('Checkout') {
             steps {
-                // Lấy code từ nhánh main
-                git branch: 'main', url: 'https://github.com/NguyenVanCuong98/crudJenkis'
-            }
+                     git branch: 'main', url: 'https://github.com/NguyenVanCuong98/crudJenkis.git'
+                  }
         }
-
-        stage('Build & Deploy') {
+        stage('Build and Run') {
             steps {
-                // Dừng các container đang chạy nếu có
-                sh 'docker-compose -f $DOCKER_COMPOSE_FILE down'
-
-                // Build và chạy container mới
-                sh 'docker-compose -f $DOCKER_COMPOSE_FILE up -d --build'
+                sh 'docker-compose down || true' // tắt container nếu đang chạy
+                sh 'docker-compose up -d --build'
             }
-        }
-    }
-
-    post {
-        success {
-            echo 'Build và deploy thành công!'
-        }
-        failure {
-            echo 'Build hoặc deploy thất bại!'
         }
     }
 }

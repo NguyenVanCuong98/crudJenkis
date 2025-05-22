@@ -20,7 +20,7 @@ WORKDIR /app
 # Copy file jar từ stage build
 COPY --from=build /app/target/*.jar app.jar
 
-EXPOSE 8080
+EXPOSE 8081
 
 # Chạy app
 ENTRYPOINT ["java", "-jar", "app.jar"]
