@@ -10,7 +10,7 @@ pipeline {
         stage('Checkout') {
             steps {
                 // Lấy code từ nhánh main
-                git branch: 'main', url: 'https://github.com/your/repo.git'
+                git branch: 'main', url: 'https://github.com/NguyenVanCuong98/crudJenkis'
             }
         }
 
