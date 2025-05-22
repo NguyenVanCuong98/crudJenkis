@@ -1,5 +1,16 @@
 pipeline {
     agent any
+
+    tools {
+        jdk 'jdk17'                // tên bạn đặt ở bước 2
+        maven 'maven-3.8.6'        // tên bạn đặt ở bước 3
+    }
+
+    environment {
+        JAVA_HOME = "${tool 'jdk17'}"
+        PATH = "${JAVA_HOME}/bin:${env.PATH}"
+    }
+
     stages {
         stage('Checkout') {
             steps {
@@ -28,10 +39,10 @@ pipeline {
             }
             steps {
                 echo "Deploying to production server..."
-                // Thêm các bước deploy nếu có
             }
         }
     }
+
     post {
         success {
             echo '🎉 Build and tests successful!'
