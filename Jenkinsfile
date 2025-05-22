@@ -1,11 +1,10 @@
 pipeline {
-    agent any
-
-    tools {
-        jdk 'JDK 17'       // Tên cấu hình JDK trong Global Tool Configuration
-        maven 'Maven 3'    // Tên cấu hình Maven trong Global Tool Configuration
+    agent {
+        docker {
+            image 'maven:3.8.6-openjdk-17'  // image Maven + JDK17
+            args '-v $HOME/.m2:/root/.m2'   // cache Maven repo (tùy chọn)
+        }
     }
-
     stages {
         stage('Checkout') {
             steps {
@@ -13,45 +12,21 @@ pipeline {
                     url: 'https://github.com/NguyenVanCuong98/crudJenkis'
             }
         }
-
         stage('Build') {
             steps {
-                script {
-                    def javaHome = tool 'JDK 17'
-                    def mavenHome = tool 'Maven 3'
-                    withEnv([
-                        "JAVA_HOME=${javaHome}",
-                        "PATH+JAVA=${javaHome}/bin",
-                        "PATH+MAVEN=${mavenHome}/bin"
-                    ]) {
-                        sh 'mvn clean package -DskipTests'
-                    }
-                }
+                sh 'mvn clean package -DskipTests'
             }
         }
-
         stage('Test') {
             steps {
-                script {
-                    def javaHome = tool 'JDK 17'
-                    def mavenHome = tool 'Maven 3'
-                    withEnv([
-                        "JAVA_HOME=${javaHome}",
-                        "PATH+JAVA=${javaHome}/bin",
-                        "PATH+MAVEN=${mavenHome}/bin"
-                    ]) {
-                        sh 'mvn test'
-                    }
-                }
+                sh 'mvn test'
             }
         }
-
         stage('Package & Archive') {
             steps {
                 archiveArtifacts artifacts: 'target/*.jar', fingerprint: true
             }
         }
-
         stage('Deploy (optional)') {
             when {
                 branch 'main'
@@ -62,7 +37,6 @@ pipeline {
             }
         }
     }
-
     post {
         success {
             echo '🎉 Build and tests successful!'
