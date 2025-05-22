@@ -1,14 +1,26 @@
-FROM jenkins/jenkins:lts
+# 1. Build project bằng Maven
+FROM maven:3.9.4-eclipse-temurin-17 AS build
 
-USER root
+WORKDIR /app
 
-# Cài JDK 17
-RUN apt-get update && \
-    apt-get install -y openjdk-17-jdk && \
-    apt-get clean
+# Copy pom.xml trước để resolve dependency trước (tối ưu cache)
+COPY pom.xml .
 
-# Thiết lập JAVA_HOME cho JDK 17
-ENV JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
-ENV PATH="$JAVA_HOME/bin:$PATH"
+# Copy src để build
+COPY src ./src
 
-USER jenkins
+# Build và tạo file .jar (nếu lỗi, thường do project)
+RUN mvn clean package -DskipTests
+
+# 2. Dùng image nhẹ để chạy app
+FROM eclipse-temurin:17-jre-alpine
+
+WORKDIR /app
+
+# Copy file jar từ stage build
+COPY --from=build /app/target/*.jar app.jar
+
+EXPOSE 8080
+
+# Chạy app
+ENTRYPOINT ["java", "-jar", "app.jar"]
