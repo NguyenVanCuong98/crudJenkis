@@ -1,53 +1,54 @@
 pipeline {
     agent any
 
+    tools {
+        jdk 'jdk17'                // tên bạn đặt ở bước 2
+        maven 'maven'        // tên bạn đặt ở bước 3
+    }
+
     environment {
-        COMPOSE_FILE = 'docker-compose.yml'
+        JAVA_HOME = "${tool 'jdk17'}"
+        PATH = "${JAVA_HOME}/bin:${env.PATH}"
     }
 
     stages {
-        stage('Checkout source code') {
+        stage('Checkout') {
             steps {
-                echo '==> Cloning source code from GitHub...'
-                 git branch: 'main', url: 'https://github.com/NguyenVanCuong98/crudJenkis.git'
+                git branch: 'main',
+                    url: 'https://github.com/NguyenVanCuong98/crudJenkis'
             }
         }
-
-        stage('Stop & clean old containers') {
+        stage('Build') {
             steps {
-                echo '==> Stopping and removing old containers (if any)...'
-                sh 'docker-compose -f $COMPOSE_FILE down || true'
+                sh 'mvn clean package -DskipTests'
             }
         }
-
-        stage('Build Docker images') {
+        stage('Test') {
             steps {
-                echo '==> Building Docker images...'
-                sh 'docker-compose -f $COMPOSE_FILE build'
+                sh 'mvn test'
             }
         }
-
-        stage('Run application') {
+        stage('Package & Archive') {
             steps {
-                echo '==> Running application containers...'
-                sh 'docker-compose -f $COMPOSE_FILE up -d'
+                archiveArtifacts artifacts: 'target/*.jar', fingerprint: true
             }
         }
-
-        stage('Check running containers') {
+        stage('Deploy (optional)') {
+            when {
+                branch 'main'
+            }
             steps {
-                echo '==> Listing running containers...'
-                sh 'docker ps'
+                echo "Deploying to production server..."
             }
         }
     }
 
     post {
-        failure {
-            echo '❌ Build failed. Check log for details.'
-        }
         success {
-            echo '✅ Build and deployment completed successfully!'
+            echo '🎉 Build and tests successful!'
+        }
+        failure {
+            echo '❌ Build failed. Check logs.'
         }
     }
 }
