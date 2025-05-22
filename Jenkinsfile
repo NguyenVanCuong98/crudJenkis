@@ -9,7 +9,7 @@ pipeline {
         stage('Checkout source code') {
             steps {
                 echo '==> Cloning source code from GitHub...'
-                git url: 'https://github.com/NguyenVanCuong98/crudJenkis.git'
+                 git branch: 'main', git url: 'https://github.com/NguyenVanCuong98/crudJenkis.git'
             }
         }
 
