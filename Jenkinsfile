@@ -1,11 +1,6 @@
 pipeline {
     agent any
 
-    tools {
-        jdk 'JDK 17'
-        maven 'Maven 3.8.1'
-    }
-
     stages {
         stage('Checkout') {
             steps {
@@ -24,45 +19,47 @@ pipeline {
 
         stage('Wait for MySQL') {
             steps {
-                echo 'Chờ MySQL container sẵn sàng...'
+                echo 'Waiting for MySQL container to be ready...'
                 sh '''
                     for i in {1..10}; do
                       if docker exec mysql-dev mysqladmin ping -h"127.0.0.1" -uroot -p123456 --silent; then
-                        echo "MySQL đã sẵn sàng!"
+                        echo "MySQL is ready!"
                         break
                       fi
-                      echo "Đợi MySQL... ($i)"
+                      echo "Waiting MySQL... ($i)"
                       sleep 5
                     done
                 '''
             }
         }
 
-        stage('Build') {
+        stage('Build and Test') {
             steps {
-                echo 'Build ứng dụng với Maven'
-                sh 'mvn clean install'
-            }
-        }
-
-        stage('Test') {
-            steps {
-                echo 'Chạy test'
-                sh 'mvn test'
+                withEnv([
+                    'SPRING_DATASOURCE_URL=jdbc:mysql://localhost:3306/studentdb?useSSL=false&serverTimezone=UTC',
+                    'SPRING_DATASOURCE_USERNAME=root',
+                    'SPRING_DATASOURCE_PASSWORD=123456',
+                    'SPRING_JPA_HIBERNATE_DDL_AUTO=update',
+                    'SPRING_JPA_SHOW_SQL=true',
+                    'SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT=org.hibernate.dialect.MySQL8Dialect'
+                ]) {
+                    sh 'mvn clean install'
+                }
             }
         }
     }
 
     post {
         always {
-            echo 'Dọn dẹp MySQL container'
+            echo 'Cleaning up MySQL container'
             sh 'docker stop mysql-dev || true'
+            sh 'docker rm mysql-dev || true'
         }
         success {
-            echo 'Build thành công!'
+            echo 'Build succeeded!'
         }
         failure {
-            echo 'Build thất bại!'
+            echo 'Build failed!'
         }
     }
 }
