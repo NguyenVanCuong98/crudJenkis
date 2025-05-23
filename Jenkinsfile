@@ -1,6 +1,10 @@
 pipeline {
     agent any
 
+    environment {
+        MVN_HOME = '/usr/local/maven'
+    }
+
     stages {
         stage('Checkout') {
             steps {
@@ -10,30 +14,36 @@ pipeline {
 
         stage('Build') {
             steps {
-                bat 'mvn clean package'
+                echo 'Build ứng dụng với Maven trên Linux agent'
+                sh '''
+                    echo "Đang chạy mvn clean install"
+                    mvn clean install
+                '''
             }
         }
 
         stage('Test') {
             steps {
-                // Chạy test (nếu có)
-                bat 'mvn test'
+                echo 'Chạy test'
+                sh 'mvn test'
             }
         }
 
-        stage('Publish') {
+        stage('Deploy') {
             steps {
-                echo 'Publish steps here...'
+                echo 'Triển khai ứng dụng'
+                // Thêm lệnh deploy shell script, ví dụ:
+                sh './deploy.sh'
             }
         }
     }
 
     post {
         success {
-            echo 'Build completed successfully!'
+            echo 'Build và deploy thành công!'
         }
         failure {
-            echo 'Build failed!'
+            echo 'Build thất bại, kiểm tra lại.'
         }
     }
 }
