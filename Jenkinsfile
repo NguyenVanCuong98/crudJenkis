@@ -1,9 +1,5 @@
 pipeline {
     agent any
-    environment {
-        IMAGE_NAME = "springboot-app"
-        DOCKER_COMPOSE_FILE = "docker-compose-app.yml"
-    }
 
     stages {
         stage('Checkout') {
@@ -12,30 +8,32 @@ pipeline {
             }
         }
 
-        stage('Build Docker Image') {
+        stage('Build') {
             steps {
-                script {
-                    sh "docker build -t ${IMAGE_NAME} ."
-                }
+                bat 'mvn clean package'
             }
         }
 
-        stage('Run with docker-compose') {
+        stage('Test') {
             steps {
-                script {
-                    sh "docker-compose -f ${DOCKER_COMPOSE_FILE} down"
-                    sh "docker-compose -f ${DOCKER_COMPOSE_FILE} up -d --build"
-                }
+                // Chạy test (nếu có)
+                bat 'mvn test'
+            }
+        }
+
+        stage('Publish') {
+            steps {
+                echo 'Publish steps here...'
             }
         }
     }
 
     post {
         success {
-            echo 'Build và deploy thành công!'
+            echo 'Build completed successfully!'
         }
         failure {
-            echo 'Build hoặc deploy thất bại!'
+            echo 'Build failed!'
         }
     }
 }
