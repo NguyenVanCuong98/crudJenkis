@@ -29,12 +29,12 @@ pipeline {
                         -p 3306:3306 mysql:8.0
 
                     echo "Chờ MySQL khởi động..."
-                    for i in {1..10}; do
+                    for i in {1..6}; do
                         if docker exec mysql-dev mysqladmin ping -h"localhost" --silent; then
-                            echo "MySQL đã sẵn sàng"
+                            echo "✅ MySQL đã sẵn sàng!"
                             break
                         fi
-                        echo "Đợi MySQL..."
+                        echo "⏳ Chưa sẵn sàng, thử lại sau 5s..."
                         sleep 5
                     done
                 '''
