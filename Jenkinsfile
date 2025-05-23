@@ -1,66 +1,52 @@
 pipeline {
     agent any
 
-    environment {
-        DB_NAME = 'studentdb'
-        DB_USER = 'root'
-        DB_PASS = '123456'
+    tools {
+        jdk 'JDK 17'               // Sử dụng JDK 17 đã được cấu hình trên Jenkins
+        maven 'Maven 3.8.1'        // Sử dụng Maven 3.8.1 đã được cấu hình trên Jenkins
     }
 
-    tools {
-        jdk 'JDK 17'
-        maven 'Maven 3.8.1'
+    environment {
+        // Khai báo biến môi trường để dùng cho kết nối database
+        DB_HOST = 'mysql'           // Tên host MySQL (có thể là tên container hoặc service trong Docker network)
+        DB_PORT = '3306'            // Cổng MySQL mặc định
+        DB_NAME = 'jenkinsdb'       // Tên database bạn dùng
+        DB_USER = 'root'            // Username MySQL
+        DB_PASSWORD = '123456'      // Password MySQL
     }
 
     stages {
         stage('Checkout') {
             steps {
+                // Lấy code từ repo Git (nhánh main)
                 git branch: 'main', url: 'https://github.com/NguyenVanCuong98/crudJenkis'
             }
         }
 
-        stage('Start MySQL') {
-           steps {
-             sh '''
-               echo "Tạo Docker network nếu chưa có"
-               docker network create jenkins-net || true
-
-               echo "Chạy MySQL container"
-               docker run -d --rm --name mysql-dev --network jenkins-net \
-                 -e MYSQL_ROOT_PASSWORD=123456 \
-                 -e MYSQL_DATABASE=studentdb \
-                 -p 3306:3306 mysql:8.0
-
-               echo "Chờ MySQL khởi động (tối đa 30s)..."
-               for i in {1..6}; do
-                 if docker exec mysql-dev mysqladmin ping -hlocalhost --silent; then
-                   echo "✅ MySQL đã sẵn sàng!"
-                   break
-                 fi
-                 echo "⏳ Chưa sẵn sàng, thử lại sau 5s..."
-                 sleep 5
-               done
-             '''
-           }
-
-        }
-
         stage('Build') {
             steps {
-                sh 'mvn clean install'
+                // Biên dịch và đóng gói dự án
+                sh './mvnw clean package'
             }
         }
 
         stage('Test') {
             steps {
-                sh 'mvn test'
+                // Chạy test với các tham số kết nối MySQL được truyền vào qua biến môi trường
+                sh '''
+                ./mvnw test \
+                -Dspring.datasource.url=jdbc:mysql://${DB_HOST}:${DB_PORT}/${DB_NAME} \
+                -Dspring.datasource.username=${DB_USER} \
+                -Dspring.datasource.password=${DB_PASSWORD}
+                '''
             }
         }
-    }
 
-    post {
-        always {
-            sh 'docker stop mysql-dev || true'
+        stage('Deploy') {
+            steps {
+                echo "Deploying..."
+                // Thêm các bước deploy nếu cần, ví dụ: chạy container, copy file, gọi script deploy...
+            }
         }
     }
 }
