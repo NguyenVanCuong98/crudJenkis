@@ -13,13 +13,12 @@ pipeline {
             }
         }
 
-        stages {
-                stage('Run MySQL container') {
-                    steps {
-                        sh 'docker run -d --name mysql-dev -e MYSQL_ROOT_PASSWORD=123456 -e MYSQL_DATABASE=mydb -p 3306:3306 mysql:8.0'
+
+        stage('Run MySQL container') {
+              steps {
+                    sh 'docker run -d --name mysql-dev -e MYSQL_ROOT_PASSWORD=123456 -e MYSQL_DATABASE=mydb -p 3306:3306 mysql:8.0'
                     }
-                }
-            }
+              }
         stage('Build') {
             steps {
                 echo 'Build ứng dụng với Maven'
