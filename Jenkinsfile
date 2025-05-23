@@ -1,90 +1,44 @@
 pipeline {
     agent any
 
-    tools {
-        jdk 'jdk17'
-        maven 'maven'
-    }
-
     environment {
-        JAVA_HOME = "${tool 'jdk17'}"
-        PATH = "${JAVA_HOME}/bin:${env.PATH}"
-
-        DB_HOST = 'localhost'     // Hoặc IP MySQL trong Docker network
-        DB_PORT = '3306'
-        DB_NAME = 'studentdb'
-        DB_CREDENTIALS = credentials('mysql-root')
-        DOCKER_IMAGE = "mysql-student"  // tùy chỉnh nếu cần
+        IMAGE_NAME = "springboot-app"
+        DOCKER_COMPOSE_FILE = "docker-compose-app.yml"
     }
 
     stages {
         stage('Checkout') {
             steps {
-                git branch: 'main',
-                    url: 'https://github.com/NguyenVanCuong98/crudJenkis'
-            }
-        }
-
-        stage('Build Java') {
-            steps {
-                sh 'mvn clean package -DskipTests'
-            }
-        }
-
-        stage('Test') {
-            steps {
-                sh 'mvn test'
-            }
-        }
-
-        stage('DB Connection Test') {
-            steps {
-                sh '''
-                    echo "Testing connection to MySQL..."
-                    mysql -h $DB_HOST -P $DB_PORT -u $DB_CREDENTIALS_USR -p$DB_CREDENTIALS_PSW -e "SHOW DATABASES;"
-                '''
+                git 'https://github.com/yourusername/yourrepo.git'
             }
         }
 
         stage('Build Docker Image') {
             steps {
-                sh "docker build -t ${DOCKER_IMAGE} ."
+                script {
+                    sh "docker build -t ${IMAGE_NAME} ."
+                }
             }
         }
 
-        stage('Push Docker Image') {
-            when {
-                expression { return env.DOCKER_IMAGE.contains("your-repo") }
-            }
+        stage('Run with docker-compose') {
             steps {
-                // Chỉ push nếu bạn có login docker registry ở trước đó
-                // sh 'docker login -u $DOCKER_USER -p $DOCKER_PASSWORD registry-url'
-                sh "docker push ${DOCKER_IMAGE}"
-            }
-        }
-
-        stage('Archive JAR') {
-            steps {
-                archiveArtifacts artifacts: 'target/*.jar', fingerprint: true
-            }
-        }
-
-        stage('Deploy') {
-            when {
-                branch 'main'
-            }
-            steps {
-                echo "🚀 Deploying to production server..."
+                script {
+                    sh "docker-compose -f ${DOCKER_COMPOSE_FILE} down"
+                    sh "docker-compose -f ${DOCKER_COMPOSE_FILE} up -d --build"
+                }
             }
         }
     }
 
     post {
         success {
-            echo '🎉 Build + Test + DB check + Docker image OK!'
+            echo 'Build và deploy thành công!'
+            // Gửi thông báo Slack ở đây (mình có ví dụ bên dưới)
         }
         failure {
-            echo '❌ Something went wrong, check logs.'
+            echo 'Build hoặc deploy thất bại!'
+            // Gửi thông báo Slack ở đây (mình có ví dụ bên dưới)
         }
     }
 }

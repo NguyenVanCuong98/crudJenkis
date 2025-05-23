@@ -1,26 +1,19 @@
 version: "3.8"
 
 services:
-  app:
-    build: .
-    container_name: springboot-app
+  jenkins:
+    image: jenkins/jenkins:lts
+    container_name: jenkins-server
+    user: root
     ports:
-      - "8081:8081"
-    depends_on:
-      - mysql
+      - "8080:8080"
+      - "50000:50000"
+    volumes:
+      - jenkins_home:/var/jenkins_home
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /usr/bin/docker:/usr/bin/docker
     environment:
-      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/studentdb?allowPublicKeyRetrieval=true&useSSL=false
-      SPRING_DATASOURCE_USERNAME: root
-      SPRING_DATASOURCE_PASSWORD: 123456
-      SPRING_JPA_HIBERNATE_DDL_AUTO: update
-      SPRING_JPA_SHOW_SQL: "true"
-      SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT: org.hibernate.dialect.MySQL8Dialect
+      - JAVA_OPTS=-Djenkins.install.runSetupWizard=false
 
-  mysql:
-    image: mysql:8.0
-    container_name: mysql-student
-    environment:
-      MYSQL_ROOT_PASSWORD: 123456
-      MYSQL_DATABASE: studentdb
-    ports:
-      - "3306:3306"
+volumes:
+  jenkins_home:
