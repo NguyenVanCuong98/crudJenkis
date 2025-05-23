@@ -20,25 +20,29 @@ pipeline {
         }
 
         stage('Start MySQL') {
-            steps {
-                sh '''
-                    docker network create jenkins-net || true
-                    docker run -d --rm --name mysql-dev --network jenkins-net \
-                        -e MYSQL_ROOT_PASSWORD=${DB_PASS} \
-                        -e MYSQL_DATABASE=${DB_NAME} \
-                        -p 3306:3306 mysql:8.0
+           steps {
+             sh '''
+               echo "Tạo Docker network nếu chưa có"
+               docker network create jenkins-net || true
 
-                    echo "Chờ MySQL khởi động..."
-                    for i in {1..6}; do
-                        if docker exec mysql-dev mysqladmin ping -h"localhost" --silent; then
-                            echo "✅ MySQL đã sẵn sàng!"
-                            break
-                        fi
-                        echo "⏳ Chưa sẵn sàng, thử lại sau 5s..."
-                        sleep 5
-                    done
-                '''
-            }
+               echo "Chạy MySQL container"
+               docker run -d --rm --name mysql-dev --network jenkins-net \
+                 -e MYSQL_ROOT_PASSWORD=123456 \
+                 -e MYSQL_DATABASE=studentdb \
+                 -p 3306:3306 mysql:8.0
+
+               echo "Chờ MySQL khởi động (tối đa 30s)..."
+               for i in {1..6}; do
+                 if docker exec mysql-dev mysqladmin ping -hlocalhost --silent; then
+                   echo "✅ MySQL đã sẵn sàng!"
+                   break
+                 fi
+                 echo "⏳ Chưa sẵn sàng, thử lại sau 5s..."
+                 sleep 5
+               done
+             '''
+           }
+
         }
 
         stage('Build') {
