@@ -1,6 +1,5 @@
 pipeline {
     agent any
-
     environment {
         IMAGE_NAME = "springboot-app"
         DOCKER_COMPOSE_FILE = "docker-compose-app.yml"
@@ -34,11 +33,9 @@ pipeline {
     post {
         success {
             echo 'Build và deploy thành công!'
-            // Gửi thông báo Slack ở đây (mình có ví dụ bên dưới)
         }
         failure {
             echo 'Build hoặc deploy thất bại!'
-            // Gửi thông báo Slack ở đây (mình có ví dụ bên dưới)
         }
     }
 }
