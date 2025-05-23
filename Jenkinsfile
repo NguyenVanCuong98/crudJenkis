@@ -1,13 +1,16 @@
 pipeline {
-    agent any
-
+    agent {
+        docker {
+            image 'maven:3.8.5-openjdk-17'
+            args '-v /var/run/docker.sock:/var/run/docker.sock' // để có thể chạy docker trong container nếu cần
+        }
+    }
     stages {
         stage('Checkout') {
             steps {
                 git branch: 'main', url: 'https://github.com/NguyenVanCuong98/crudJenkis'
             }
         }
-
         stage('Run MySQL container') {
             steps {
                 sh '''
@@ -16,12 +19,11 @@ pipeline {
                 '''
             }
         }
-
         stage('Wait for MySQL') {
             steps {
                 echo 'Waiting for MySQL container to be ready...'
                 sh '''
-                    for i in {1..10}; do
+                    for i in $(seq 1 10); do
                       if docker exec mysql-dev mysqladmin ping -h"127.0.0.1" -uroot -p123456 --silent; then
                         echo "MySQL is ready!"
                         break
@@ -32,7 +34,6 @@ pipeline {
                 '''
             }
         }
-
         stage('Build and Test') {
             steps {
                 withEnv([
@@ -48,7 +49,6 @@ pipeline {
             }
         }
     }
-
     post {
         always {
             echo 'Cleaning up MySQL container'
