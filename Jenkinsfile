@@ -1,8 +1,9 @@
 pipeline {
     agent any
 
-    environment {
-        MVN_HOME = '/usr/local/maven'
+    tools {
+        jdk 'JDK 17'
+        maven 'Maven 3.8.1'
     }
 
     stages {
@@ -14,11 +15,8 @@ pipeline {
 
         stage('Build') {
             steps {
-                echo 'Build ứng dụng với Maven trên Linux agent'
-                sh '''
-                    echo "Đang chạy mvn clean install"
-                    mvn clean install
-                '''
+                echo 'Build ứng dụng với Maven'
+                sh 'mvn clean install'
             }
         }
 
@@ -28,22 +26,14 @@ pipeline {
                 sh 'mvn test'
             }
         }
-
-        stage('Deploy') {
-            steps {
-                echo 'Triển khai ứng dụng'
-                // Thêm lệnh deploy shell script, ví dụ:
-                sh './deploy.sh'
-            }
-        }
     }
 
     post {
         success {
-            echo 'Build và deploy thành công!'
+            echo 'Build thành công!'
         }
         failure {
-            echo 'Build thất bại, kiểm tra lại.'
+            echo 'Build thất bại!'
         }
     }
 }
