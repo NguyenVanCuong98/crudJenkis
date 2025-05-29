@@ -21,6 +21,31 @@ pipeline {
             }
         }
 
+         stage('Start MySQL') {
+                   steps {
+                     sh '''
+                       echo "Tạo Docker network nếu chưa có"
+                       docker network create jenkins || true
+
+                       echo "Chạy MySQL container"
+                       docker run -d --rm --name mysql --network jenkins \
+                         -e MYSQL_ROOT_PASSWORD=123456 \
+                         -e MYSQL_DATABASE=jenkinsdb \
+                         -p 3306:3306 mysql:8.0
+
+                       echo "Chờ MySQL khởi động (tối đa 30s)..."
+                       for i in {1..6}; do
+                         if docker exec mysql mysqladmin ping -hlocalhost --silent; then
+                           echo "✅ MySQL đã sẵn sàng!"
+                           break
+                         fi
+                         echo "⏳ Chưa sẵn sàng, thử lại sau 5s..."
+                         sleep 5
+                       done
+                     '''
+                   }
+         }
+
         stage('Build') {
             steps {
                 sh 'chmod +x ./mvnw'           // Cấp quyền thực thi cho mvnw
@@ -45,6 +70,11 @@ pipeline {
                 echo "Deploying..."
                 // Thêm các bước deploy nếu cần
             }
+        }
+        post {
+                always {
+                    sh 'docker stop mysql-dev || true'
+                }
         }
     }
 }
