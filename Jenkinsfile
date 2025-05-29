@@ -121,11 +121,4 @@ pipeline {
             }
         }
     }
-
-    post {
-        always {
-            sh 'docker stop mysql || true'
-            sh 'docker rm mysql || true'
-        }
-    }
 }
