@@ -25,10 +25,10 @@ pipeline {
             steps {
                 sh '''
                     echo "Tạo Docker network nếu chưa có"
-                    docker network create jenkins || true
+                    docker network create jenkins-net || true
 
                     echo "Chạy MySQL container"
-                    docker run -d --name mysql --network jenkins \
+                    docker run -d --name mysql --network jenkins-net \
                       -e MYSQL_ROOT_PASSWORD=123456 \
                       -e MYSQL_DATABASE=jenkinsdb \
                       -p 3306:3306 \
