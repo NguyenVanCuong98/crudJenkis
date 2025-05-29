@@ -23,29 +23,38 @@ pipeline {
 
         stage('Start MySQL') {
             steps {
-                sh '''
-                    echo "Tạo Docker network nếu chưa có"
-                    docker network create jenkins-net || true
+                script {
+                    sh '''
+                        echo "Tạo Docker network nếu chưa có"
+                        docker network inspect jenkins-net > /dev/null 2>&1 || docker network create jenkins-net
 
-                    echo "Chạy MySQL container"
-                    docker run -d --name mysql --network jenkins-net \
-                      -e MYSQL_ROOT_PASSWORD=123456 \
-                      -e MYSQL_DATABASE=jenkinsdb \
-                      -p 3306:3306 \
-                      mysql:8.0
+                        echo "Kiểm tra nếu container MySQL đã chạy, nếu có thì dừng và xóa"
+                        if [ $(docker ps -q -f name=mysql) ]; then
+                            docker stop mysql
+                            docker rm mysql
+                        fi
 
-                    echo "Chờ MySQL khởi động (tối đa 30s)..."
-                    for i in {1..6}; do
-                      if docker exec mysql mysqladmin ping -uroot -p123456 --silent; then
-                        echo "✅ MySQL đã sẵn sàng!"
-                        break
-                      fi
-                      echo "⏳ Chưa sẵn sàng, thử lại sau 5s..."
-                      sleep 5
-                    done
-                '''
+                        echo "Chạy MySQL container"
+                        docker run -d --name mysql --network jenkins-net \
+                            -e MYSQL_ROOT_PASSWORD=123456 \
+                            -e MYSQL_DATABASE=jenkinsdb \
+                            -p 3306:3306 \
+                            mysql:8.0
+
+                        echo "Chờ MySQL khởi động (tối đa 30s)..."
+                        for i in $(seq 1 6); do
+                            if docker exec mysql mysqladmin ping -uroot -p123456 --silent; then
+                                echo "✅ MySQL đã sẵn sàng!"
+                                break
+                            fi
+                            echo "⏳ Chưa sẵn sàng, thử lại sau 5s..."
+                            sleep 5
+                        done
+                    '''
+                }
             }
         }
+
 
         stage('Build') {
             steps {
