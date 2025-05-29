@@ -7,7 +7,7 @@ pipeline {
     }
 
     environment {
-        DB_HOST = 'mysql'           // Tên container/service MySQL trong mạng Docker/Jenkins
+        DB_HOST = 'mysql'
         DB_PORT = '3306'
         DB_NAME = 'jenkinsdb'
         DB_USER = 'root'
@@ -21,46 +21,47 @@ pipeline {
             }
         }
 
-         stage('Start MySQL') {
-                   steps {
-                     sh '''
-                       echo "Tạo Docker network nếu chưa có"
-                       docker network create jenkins || true
+        stage('Start MySQL') {
+            steps {
+                sh '''
+                    echo "Tạo Docker network nếu chưa có"
+                    docker network create jenkins || true
 
-                       echo "Chạy MySQL container"
-                       docker run -d --rm --name mysql --network jenkins \
-                         -e MYSQL_ROOT_PASSWORD=123456 \
-                         -e MYSQL_DATABASE=jenkinsdb \
-                         -p 3306:3306 mysql:8.0
+                    echo "Chạy MySQL container"
+                    docker run -d --name mysql --network jenkins \
+                      -e MYSQL_ROOT_PASSWORD=123456 \
+                      -e MYSQL_DATABASE=jenkinsdb \
+                      -p 3306:3306 \
+                      mysql:8.0
 
-                       echo "Chờ MySQL khởi động (tối đa 30s)..."
-                       for i in {1..6}; do
-                         if docker exec mysql mysqladmin ping -hlocalhost --silent; then
-                           echo "✅ MySQL đã sẵn sàng!"
-                           break
-                         fi
-                         echo "⏳ Chưa sẵn sàng, thử lại sau 5s..."
-                         sleep 5
-                       done
-                     '''
-                   }
-         }
+                    echo "Chờ MySQL khởi động (tối đa 30s)..."
+                    for i in {1..6}; do
+                      if docker exec mysql mysqladmin ping -uroot -p123456 --silent; then
+                        echo "✅ MySQL đã sẵn sàng!"
+                        break
+                      fi
+                      echo "⏳ Chưa sẵn sàng, thử lại sau 5s..."
+                      sleep 5
+                    done
+                '''
+            }
+        }
 
         stage('Build') {
             steps {
-                sh 'chmod +x ./mvnw'           // Cấp quyền thực thi cho mvnw
+                sh 'chmod +x ./mvnw'
                 sh './mvnw clean package'
             }
         }
 
         stage('Test') {
             steps {
-                sh 'chmod +x ./mvnw'           // Cấp quyền thực thi cho mvnw
+                sh 'chmod +x ./mvnw'
                 sh '''
-                ./mvnw test \
-                -Dspring.datasource.url=jdbc:mysql://${DB_HOST}:${DB_PORT}/${DB_NAME} \
-                -Dspring.datasource.username=${DB_USER} \
-                -Dspring.datasource.password=${DB_PASSWORD}
+                    ./mvnw test \
+                    -Dspring.datasource.url=jdbc:mysql://${DB_HOST}:${DB_PORT}/${DB_NAME} \
+                    -Dspring.datasource.username=${DB_USER} \
+                    -Dspring.datasource.password=${DB_PASSWORD}
                 '''
             }
         }
@@ -68,13 +69,15 @@ pipeline {
         stage('Deploy') {
             steps {
                 echo "Deploying..."
-                // Thêm các bước deploy nếu cần
+                // Thêm bước deploy nếu cần
             }
         }
-        post {
-                always {
-                    sh 'docker stop mysql-dev || true'
-                }
+    }
+
+    post {
+        always {
+            sh 'docker stop mysql || true'
+            sh 'docker rm mysql || true'
         }
     }
 }
