@@ -114,10 +114,9 @@ pipeline {
             }
         }
 
-        stage('Deploy') {
+        stage('Deploy to Render') {
             steps {
-                echo "Deploying..."
-                // Thêm bước deploy nếu cần
+                sh 'curl -X POST "https://api.render.com/deploy/srv-d0s2c5u3jp1c73e8od50?key=m-qKVhoMe_k"'
             }
         }
     }
