@@ -16,7 +16,7 @@ public class StudentController {
     private StudentService studentService;
 
     @PostMapping
-    public Students createStudent(@RequestBody Students student) {
+    public Students createStudent(@RequestBody Students student) throws Exception {
         return studentService.createStudent(student);
     }
 

@@ -1,13 +1,16 @@
 package com.example.crudsinhvien.service.impl;
 
 import com.example.crudsinhvien.entity.Students;
+import com.example.crudsinhvien.exception.ConflictException;
 import com.example.crudsinhvien.repository.StudentRepository;
 import com.example.crudsinhvien.service.StudentService;
+import jakarta.transaction.Transactional;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.beans.Transient;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
@@ -21,6 +24,7 @@ public class StudentServiceImpl implements StudentService {
     private RedissonClient redissonClient;
 
 
+    @Transactional
     @Override
     public Students createStudent(Students student) {
         String lockKey = "student:create:" + student.getName();
@@ -30,12 +34,12 @@ public class StudentServiceImpl implements StudentService {
             if(lock.tryLock(5,10, TimeUnit.SECONDS)) {
                 Optional<Students> existing = studentRepository.findByName(student.getName());
                 if (existing.isPresent()) {
-                    throw new RuntimeException("Student already exists with this email");
+                    throw new ConflictException("Student already exists with this email");
                 }
 
                 return studentRepository.save(student);
             }else{
-                throw new RuntimeException("Another creation process is ongoing. Please try again.");
+                throw new ConflictException("Another creation process is ongoing. Please try again.");
             }
 
         } catch (Exception e) {
