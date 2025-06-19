@@ -28,8 +28,7 @@ pipeline {
                         echo "Tạo Docker network nếu chưa có"
                         docker network inspect jenkins-net > /dev/null 2>&1 || docker network create jenkins-net
 
-                        # Dừng & xóa container nếu đang chạy
-                        for container in mysql zookeeper kafka; do
+                        for container in mysql zookeeper kafka redis; do
                           if [ $(docker ps -q -f name=$container) ]; then
                             echo "Dừng và xóa container $container"
                             docker stop $container
@@ -59,52 +58,51 @@ pipeline {
                             -p 9092:9092 \
                             confluentinc/cp-kafka:latest
 
-                        echo "Chờ MySQL khởi động (tối đa 30s)..."
+                        echo "Chạy Redis container"
+                        docker run -d --name redis --network jenkins-net \
+                            -p 6379:6379 redis:7
+
+                        echo "Chờ các dịch vụ sẵn sàng..."
+
+                        echo "⏳ MySQL..."
                         for i in $(seq 1 6); do
                             if docker exec mysql mysqladmin ping -uroot -p123456 --silent; then
                                 echo "✅ MySQL đã sẵn sàng!"
                                 break
                             fi
-                            echo "⏳ Chưa sẵn sàng, thử lại sau 5s..."
                             sleep 5
                         done
 
-                        echo "Chờ Zookeeper khởi động (tối đa 30s)..."
+                        echo "⏳ Zookeeper..."
                         for i in $(seq 1 6); do
                             if echo ruok | nc localhost 2181 | grep imok; then
                                 echo "✅ Zookeeper đã sẵn sàng!"
                                 break
                             fi
-                            echo "⏳ Zookeeper chưa sẵn sàng, thử lại sau 5s..."
                             sleep 5
                         done
 
-                        echo "Chờ Kafka khởi động (tối đa 60s)..."
+                        echo "⏳ Kafka..."
                         for i in $(seq 1 12); do
                             if docker exec kafka kafka-topics --bootstrap-server localhost:9092 --list > /dev/null 2>&1; then
                                 echo "✅ Kafka đã sẵn sàng!"
                                 break
                             fi
-                            echo "⏳ Kafka chưa sẵn sàng, thử lại sau 5s..."
                             sleep 5
                         done
 
-                        echo "Chờ Redis khởi động (tối đa 30s)..."
+                        echo "⏳ Redis..."
                         for i in $(seq 1 6); do
                             if docker exec redis redis-cli ping | grep PONG > /dev/null; then
                                 echo "✅ Redis đã sẵn sàng!"
                                 break
                             fi
-                            echo "⏳ Redis chưa sẵn sàng, thử lại sau 5s..."
                             sleep 5
                         done
-
                     '''
                 }
             }
         }
-
-
 
         stage('Build') {
             steps {
@@ -112,42 +110,24 @@ pipeline {
                 sh './mvnw clean package'
             }
         }
+    }
 
-        post {
-                failure {
-                    echo "❌ Build thất bại. Đang dọn dẹp container..."
+    post {
+        failure {
+            echo "❌ Build thất bại. Đang dọn dẹp container..."
 
-                    sh '''
-                        for container in mysql kafka zookeeper redis; do
-                            if [ $(docker ps -q -f name=$container) ]; then
-                                echo "🛑 Dừng container $container"
-                                docker stop $container
-                            fi
-                            if [ $(docker ps -a -q -f name=$container) ]; then
-                                echo "🧹 Xóa container $container"
-                                docker rm $container
-                            fi
-                        done
-                    '''
-                }
-            }
-
-//         stage('Test') {
-//             steps {
-//                 sh 'chmod +x ./mvnw'
-//                 sh '''
-//                     ./mvnw test \
-//                     -Dspring.datasource.url=jdbc:mysql://${DB_HOST}:${DB_PORT}/${DB_NAME} \
-//                     -Dspring.datasource.username=${DB_USER} \
-//                     -Dspring.datasource.password=${DB_PASSWORD}
-//                 '''
-//             }
-//         }
-//
-//         stage('Deploy to Render') {
-//             steps {
-//                 sh 'curl -X POST "https://api.render.com/deploy/srv-d0s2c5u3jp1c73e8od50?key=m-qKVhoMe_k"'
-//             }
-//         }
+            sh '''
+                for container in mysql kafka zookeeper redis; do
+                    if [ $(docker ps -q -f name=$container) ]; then
+                        echo "🛑 Dừng container $container"
+                        docker stop $container
+                    fi
+                    if [ $(docker ps -a -q -f name=$container) ]; then
+                        echo "🧹 Xóa container $container"
+                        docker rm $container
+                    fi
+                done
+            '''
+        }
     }
 }
