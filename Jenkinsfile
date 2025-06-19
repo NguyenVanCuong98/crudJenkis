@@ -113,6 +113,25 @@ pipeline {
             }
         }
 
+        post {
+                failure {
+                    echo "❌ Build thất bại. Đang dọn dẹp container..."
+
+                    sh '''
+                        for container in mysql kafka zookeeper redis; do
+                            if [ $(docker ps -q -f name=$container) ]; then
+                                echo "🛑 Dừng container $container"
+                                docker stop $container
+                            fi
+                            if [ $(docker ps -a -q -f name=$container) ]; then
+                                echo "🧹 Xóa container $container"
+                                docker rm $container
+                            fi
+                        done
+                    '''
+                }
+            }
+
 //         stage('Test') {
 //             steps {
 //                 sh 'chmod +x ./mvnw'
