@@ -88,6 +88,17 @@ pipeline {
                             echo "⏳ Kafka chưa sẵn sàng, thử lại sau 5s..."
                             sleep 5
                         done
+
+                        echo "Chờ Redis khởi động (tối đa 30s)..."
+                        for i in $(seq 1 6); do
+                            if docker exec redis redis-cli ping | grep PONG > /dev/null; then
+                                echo "✅ Redis đã sẵn sàng!"
+                                break
+                            fi
+                            echo "⏳ Redis chưa sẵn sàng, thử lại sau 5s..."
+                            sleep 5
+                        done
+
                     '''
                 }
             }
