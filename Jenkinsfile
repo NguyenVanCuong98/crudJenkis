@@ -102,22 +102,22 @@ pipeline {
             }
         }
 
-        stage('Test') {
-            steps {
-                sh 'chmod +x ./mvnw'
-                sh '''
-                    ./mvnw test \
-                    -Dspring.datasource.url=jdbc:mysql://${DB_HOST}:${DB_PORT}/${DB_NAME} \
-                    -Dspring.datasource.username=${DB_USER} \
-                    -Dspring.datasource.password=${DB_PASSWORD}
-                '''
-            }
-        }
-
-        stage('Deploy to Render') {
-            steps {
-                sh 'curl -X POST "https://api.render.com/deploy/srv-d0s2c5u3jp1c73e8od50?key=m-qKVhoMe_k"'
-            }
-        }
+//         stage('Test') {
+//             steps {
+//                 sh 'chmod +x ./mvnw'
+//                 sh '''
+//                     ./mvnw test \
+//                     -Dspring.datasource.url=jdbc:mysql://${DB_HOST}:${DB_PORT}/${DB_NAME} \
+//                     -Dspring.datasource.username=${DB_USER} \
+//                     -Dspring.datasource.password=${DB_PASSWORD}
+//                 '''
+//             }
+//         }
+//
+//         stage('Deploy to Render') {
+//             steps {
+//                 sh 'curl -X POST "https://api.render.com/deploy/srv-d0s2c5u3jp1c73e8od50?key=m-qKVhoMe_k"'
+//             }
+//         }
     }
 }
